@@ -15,19 +15,34 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Check, Trash2, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Admin = () => {
   const { toast } = useToast();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [filter, setFilter] = useState<"all" | "read" | "unread">("all");
 
   const { data: messages, isLoading } = useQuery({
-    queryKey: ['messages', refreshTrigger],
+    queryKey: ['messages', refreshTrigger, filter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (filter === "read") {
+        query = query.eq('read', true);
+      } else if (filter === "unread") {
+        query = query.eq('read', false);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     }
@@ -84,7 +99,19 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Mensagens Recebidas</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Mensagens Recebidas</h1>
+          <Select value={filter} onValueChange={(value: "all" | "read" | "unread") => setFilter(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar mensagens" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as mensagens</SelectItem>
+              <SelectItem value="read">Mensagens lidas</SelectItem>
+              <SelectItem value="unread">Mensagens não lidas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         
         <div className="bg-white rounded-lg shadow">
           <Table>
