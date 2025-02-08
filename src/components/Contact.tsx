@@ -1,18 +1,61 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { MapPin, Phone, Mail } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Contact = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Mensagem enviada!",
-      description: "Entraremos em contato em breve.",
-    });
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert([formData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensagem enviada!",
+        description: "Entraremos em contato em breve.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Por favor, tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,26 +108,36 @@ export const Contact = () => {
           </div>
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg space-y-6">
             <Input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Nome"
               className="border-gray-300 focus:border-church-gold"
               required
             />
             <Input
+              name="email"
               type="email"
+              value={formData.email}
+              onChange={handleChange}
               placeholder="E-mail"
               className="border-gray-300 focus:border-church-gold"
               required
             />
             <Textarea
+              name="message"
+              value={formData.message}
+              onChange={handleChange}
               placeholder="Sua mensagem"
               className="min-h-[120px] border-gray-300 focus:border-church-gold"
               required
             />
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-church-gold hover:bg-church-gold/90 text-church-blue font-semibold text-lg h-12"
             >
-              Enviar Mensagem
+              {isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}
             </Button>
           </form>
         </div>
