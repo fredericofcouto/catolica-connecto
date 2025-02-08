@@ -14,7 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Check, X } from "lucide-react";
+import { Check, Trash2, X } from "lucide-react";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -48,6 +48,25 @@ const Admin = () => {
       setRefreshTrigger(prev => prev + 1);
       toast({
         title: "Mensagem marcada como lida"
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir mensagem",
+        variant: "destructive"
+      });
+    } else {
+      setRefreshTrigger(prev => prev + 1);
+      toast({
+        title: "Mensagem excluída com sucesso"
       });
     }
   };
@@ -102,15 +121,24 @@ const Admin = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {!message.read && (
+                    <div className="flex gap-2">
+                      {!message.read && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleMarkAsRead(message.id)}
+                        >
+                          Marcar como lida
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
-                        onClick={() => handleMarkAsRead(message.id)}
+                        onClick={() => handleDelete(message.id)}
                       >
-                        Marcar como lida
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
